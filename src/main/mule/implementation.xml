@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<sub-flow name="post-order" doc:id="40d6f42a-4d1b-4b1f-b742-f31f32269805" >
+		<json-logger:logger doc:name="Start flow of order-post" doc:id="ba8bef46-bc87-494d-9ddb-98d98aa8bd25" config-ref="JSON_Logger_Config" message="Start flow of order-post" />
+		<http:request method="POST" doc:name="calling order request from system api" doc:id="a9e6f89c-abdf-4ced-b149-61ecdd290d87" config-ref="HTTP_Request_configuration" path="${micorp.salesforce.system.api.path.order}">
+			<http:body><![CDATA[#[vars.orderpayload]]]></http:body>
+		</http:request>
+		<ee:transform doc:name="payload of post request" doc:id="1a21810c-3d94-4581-86c5-b6b0495744b7">
+			<ee:message>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="variable1" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<set-variable value="#[payload.orderId]" doc:name="orderId" doc:id="abdde6df-086b-41ae-92b0-b72a96cfd289" variableName="orderId" />
+		<json-logger:logger doc:name="End flow of post -order" doc:id="5f67f455-46ca-40b1-be51-f428f95defad" config-ref="JSON_Logger_Config" message="End flow of post -order" tracePoint="END" />
+	</sub-flow>
+	<sub-flow name="post-customer" doc:id="777e845b-ffe1-4651-afc2-d0afb78b6608" >
+		<json-logger:logger doc:name="Start flow of posting customer data" doc:id="9a6c9022-2a23-49f2-a94d-130f1680b864" config-ref="JSON_Logger_Config" message="Start flow of posting customer data" />
+		<ee:transform doc:name="Mapping with customer data" doc:id="031b671a-cdaf-47d1-b690-beebd64aa330">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"firstName":vars.customerpayload.firstName,
+	"lastName":vars.customerpayload.lastName,
+	"address":vars.customerpayload.address,
+	"orderId": vars.orderId
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<http:request method="POST" doc:name="calling customer system api" doc:id="c618833b-77c1-4e85-b863-7388d332de93" config-ref="HTTP_Request_configuration" path="${micorp.salesforce.system.api.path.customer}">
+			<http:body><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></http:body>
+		</http:request>
+		<ee:transform doc:name="payload of customer" doc:id="778ed7e5-acb7-4c78-88e3-69407f5d8a75">
+			<ee:message>
+
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="variable2" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		
+</ee:transform>
+		<json-logger:logger doc:name="End flow of posting customer data" doc:id="1850c1b2-2d49-4500-a67a-423d4200e2e6" config-ref="JSON_Logger_Config" message="End flow of posting customer data" tracePoint="END" />
+	</sub-flow>
+	<flow name="post-item" doc:id="20f1bd91-d01f-42ee-9395-b83c482aebee" >
+		<json-logger:logger doc:name="Start flow of posting item data" doc:id="211282f0-c435-4d2f-8b6d-9f66f4f7ba39" config-ref="JSON_Logger_Config" message="Start flow of posting item data" />
+		<ee:transform doc:name="mapping with item payload" doc:id="95adf583-5daf-45d9-a2f7-b8565dab3caa" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+vars.itempayload map((item,index)->{
+    "id": item.id,
+    "category": item.category,
+    "quantity": item.quantity,
+    "size": item.size,
+    "orderId": vars.orderId
+})]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<parallel-foreach doc:name="Parallel For Each" doc:id="1f2094b7-0852-44a8-97f1-23115fa16af5" >
+			<http:request method="POST" doc:name="calling system api and posting data of item payload" doc:id="d18679ab-383a-4bc0-92b7-a3d33a8dd6e7" config-ref="HTTP_Request_configuration" path="${micorp.salesforce.system.api.path.item}" >
+				<http:body ><![CDATA[#[%dw 2.0
+output application/json
+---
+payload]]]></http:body>
+			</http:request>
+		</parallel-foreach>
+		<ee:transform doc:name="payload of item" doc:id="b3f3abcc-1c19-4a03-bebf-d7477357086c" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="variable3" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="payload of item endpoint" doc:id="7ab23ec2-d5ec-490a-b564-7acd32db25da" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+	{ "result 1": vars.variable1,
+	  "result 2": vars.variable2,
+	  "result 3": vars.variable3.payload[0]
+	}]]></ee:set-payload>
+			
+</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="variable3" ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		
+</ee:transform>
+		<json-logger:logger doc:name="End flow of posting item data" doc:id="c30936f3-8c52-4ccc-b501-030324ac4d74" config-ref="JSON_Logger_Config" message="End flow of posting item data" tracePoint="END" />
+	</flow>
+</mule>

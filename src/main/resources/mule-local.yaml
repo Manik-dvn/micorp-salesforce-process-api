@@ -1,0 +1,31 @@
+# Local Configuration
+
+#Salesforce Configuration
+Connection:
+  Username: "![pbfIVaG7bqxC0aw2OwH6kiDG8+kJk24oMBj1gSYPeiuCWqKrTODggQ==]"
+  Password: "![DXaW1pC4A+Yfdz2kOayD1w==]"
+  Token: "![keCnfg5nwp6FzYZNzOj3FBph4weFuWQD0xhpAy7jgb8=]"
+  
+# Listener Configuration 
+http:
+  port: "8081"
+  host: "localhost"
+  
+# System Api Configuration
+micorp.salesforce.system.api:
+  host: "new-micorp-salesforce-system-api.us-e1.cloudhub.io"
+  port: ""
+  basepath: "/api"
+  path:
+    order: "/order"
+    customer: "/customer"
+    item: "/item"
+  headers:
+    client_id: "71be9be823484da0be2c6b5284c43550"
+    client_secret: "BC508a5BE43247CCaf390bF2d4db6B0C"
+    
+#json configuration
+json.logger:
+  application:
+    name: "micorp-salesforce-process-api"
+    version: "v1" 

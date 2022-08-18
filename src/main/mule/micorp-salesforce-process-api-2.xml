@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:json-logger="http://www.mulesoft.org/schema/mule/json-logger" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/json-logger http://www.mulesoft.org/schema/mule/json-logger/current/mule-json-logger.xsd">
+    <http:listener-config name="micorp-salesforce-process-api-2-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="micorp-salesforce-process-api-2-config" api="resource::ce235d46-115c-497c-b0e2-474afd80f5e9:micorp-salesforce-process-api:1.0.0:raml:zip:micorp-salesforce-process-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="micorp-salesforce-process-api-2-main">
+        <http:listener config-ref="micorp-salesforce-process-api-2-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="micorp-salesforce-process-api-2-config" />
+		<error-handler ref="Error-Handler-Prc-main" />
+    </flow>
+    <flow name="micorp-salesforce-process-api-2-console">
+        <http:listener config-ref="micorp-salesforce-process-api-2-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="micorp-salesforce-process-api-2-config" />
+		<error-handler ref="Error-Handler-Prc-main" />
+    </flow>
+    <flow name="post:\orders:application\json:micorp-salesforce-process-api-2-config">
+        <json-logger:logger doc:name="Start flow of post-order" doc:id="43edbf2d-610a-4278-8f2b-f23809742f6f" config-ref="JSON_Logger_Config" message="Start flow of post-order" />
+		<set-variable value="#[payload.order.poNumber]" doc:name="poNumber" doc:id="50c906b8-e041-407e-9ab8-77040ea9b72b" variableName="poNumber" />
+		<ee:transform doc:name="making variable of order,item and customer" doc:id="eea56e54-9380-4445-ad54-93be228e1c61">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="orderpayload"><![CDATA[%dw 2.0
+output application/json
+---
+payload.order]]></ee:set-variable>
+				<ee:set-variable variableName="itempayload"><![CDATA[%dw 2.0
+output application/json
+---
+payload.items]]></ee:set-variable>
+				<ee:set-variable variableName="customerpayload"><![CDATA[%dw 2.0
+output application/json
+---
+payload.customer]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="post-order" doc:id="2bb8562f-7ec9-4e9f-9296-a3fc94b8fb10" name="post-order" />
+		<flow-ref doc:name="post-customer" doc:id="8f4758d2-e633-4c77-9dbd-ca920e0ca50d" name="post-customer" />
+		<flow-ref doc:name="post-item" doc:id="0208caf5-3a77-4daf-890b-9c7188b9b0f0" name="post-item" />
+    </flow>
+</mule>
